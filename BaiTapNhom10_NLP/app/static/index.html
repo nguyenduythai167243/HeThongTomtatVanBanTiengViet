@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NLP-20 | Hệ Thống Tóm Tắt Văn Bản Tiếng Việt (Transformer Seq2Seq)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="logo-badge">NLP-20</div>
+        <div>
+          <h1>Hệ Thống Tóm Tắt Văn Bản Tiếng Việt</h1>
+          <p class="subtitle">Transformer Seq2Seq (BARTpho) • Baselines • Chunking Map-Reduce • Fact-Checking</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="badge-status"><span class="status-dot"></span> Sẵn sàng (Ready)</span>
+        <button id="theme-toggle" class="btn-icon" title="Chuyển chế độ sáng/tối">🌓</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-summarize">✍️ Tóm Tắt Tương Tác</button>
+      <button class="tab-btn" data-tab="tab-compare">⚖️ So Sánh Song Song</button>
+      <button class="tab-btn" data-tab="tab-dashboard">📊 Dashboard Hiệu Năng</button>
+      <button class="tab-btn" data-tab="tab-errors">🔍 Hồ Sơ Lỗi & Fact-Check</button>
+    </nav>
+
+    <!-- Tab 1: Interactive Summarizer -->
+    <section id="tab-summarize" class="tab-content active">
+      <div class="control-panel glass-card">
+        <div class="input-header">
+          <label for="sample-select"><strong>Chọn bài mẫu khảo sát:</strong></label>
+          <select id="sample-select" class="form-select">
+            <option value="">-- Chọn bài báo mẫu theo lĩnh vực --</option>
+          </select>
+        </div>
+
+        <div class="model-settings-grid">
+          <div class="setting-item">
+            <label for="model-select"><strong>Mô hình tóm tắt:</strong></label>
+            <select id="model-select" class="form-select">
+              <option value="bartpho" selected>⭐ Transformer Seq2Seq (BARTpho)</option>
+              <option value="chunking">⚡ BARTpho + Map-Reduce Chunking (Văn bản dài)</option>
+              <option value="lead1">📌 Baseline Lead-1 (1 câu đầu)</option>
+              <option value="lead3">📌 Baseline Lead-3 (3 câu đầu)</option>
+              <option value="tfidf">📊 Baseline TF-IDF Extractive (3 câu)</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <label for="min-len"><strong>Độ dài tối thiểu:</strong> <span id="min-len-val">30</span> từ</label>
+            <input type="range" id="min-len" min="15" max="60" value="30" class="form-range">
+          </div>
+
+          <div class="setting-item">
+            <label for="max-len"><strong>Độ dài tối đa:</strong> <span id="max-len-val">150</span> từ</label>
+            <input type="range" id="max-len" min="60" max="250" value="150" class="form-range">
+          </div>
+        </div>
+      </div>
+
+      <div class="workspace-grid">
+        <!-- Input Panel -->
+        <div class="panel-box glass-card">
+          <div class="panel-title">
+            <span>📝 Văn bản tiếng Việt gốc</span>
+            <span id="doc-counter" class="text-counter">0 từ</span>
+          </div>
+          <textarea id="input-text" placeholder="Dán văn bản tiếng Việt cần tóm tắt vào đây (hoặc chọn bài mẫu phía trên)..."></textarea>
+          <div class="panel-footer">
+            <button id="btn-clear" class="btn btn-secondary">Xóa trắng</button>
+            <button id="btn-summarize" class="btn btn-primary">
+              <span class="btn-spinner hidden" id="spinner"></span>
+              Thực hiện Tóm tắt
+            </button>
+          </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="panel-box glass-card">
+          <div class="panel-title">
+            <span>📋 Bản tóm tắt giữ ý chính</span>
+            <span id="summary-counter" class="text-counter">0 từ</span>
+          </div>
+          <div id="output-box" class="output-content">
+            <div class="empty-placeholder">Bản tóm tắt sinh ra từ mô hình sẽ hiển thị tại đây...</div>
+          </div>
+          
+          <!-- Metadata and Fact-Check Card -->
+          <div id="fact-card" class="fact-card hidden">
+            <div class="fact-header">
+              <span id="fact-badge" class="badge-tag">Chân thực</span>
+              <span id="latency-tag" class="latency-tag">0 ms</span>
+              <span id="compression-tag" class="comp-tag">Tỷ lệ nén: 0%</span>
+            </div>
+            <div id="fact-details" class="fact-details"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Side-by-Side Comparison -->
+    <section id="tab-compare" class="tab-content">
+      <div class="glass-card mb-20">
+        <div class="flex-between">
+          <div>
+            <h3>So Sánh Đối Chuẩn Song Song (Side-by-Side)</h3>
+            <p class="text-muted">Đối chiếu cùng lúc Lead-1, Lead-3, TF-IDF, BARTpho và Chunking trên cùng một văn bản.</p>
+          </div>
+          <button id="btn-run-compare" class="btn btn-primary">So sánh tất cả</button>
+        </div>
+      </div>
+      <div id="compare-grid" class="compare-grid">
+        <!-- Rendered dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- Tab 3: Performance Dashboard -->
+    <section id="tab-dashboard" class="tab-content">
+      <div class="glass-card">
+        <h3>Bảng Đối Chuẩn Hiệu Năng Thực Nghiệm (ROUGE & Latency)</h3>
+        <p class="text-muted">Được tính toán trên tập test chuẩn với tokenization tiếng Việt cố định.</p>
+        <div class="table-responsive mt-15">
+          <table class="benchmark-table" id="metrics-table">
+            <thead>
+              <tr>
+                <th>Mô hình</th>
+                <th>ROUGE-1 F1</th>
+                <th>ROUGE-2 F1</th>
+                <th>ROUGE-L F1</th>
+                <th>Factuality (%)</th>
+                <th>Latency (ms)</th>
+                <th>Throughput (từ/s)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="7" class="text-center">Đang nạp dữ liệu từ benchmark_metrics.json...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: Error Diagnostic -->
+    <section id="tab-errors" class="tab-content">
+      <div class="glass-card">
+        <h3>Hồ Sơ Lỗi & Kiểm Soát Ảo Giác (Hallucination Diagnostic)</h3>
+        <p class="text-muted">Phân loại 3 nhóm lỗi trọng tâm: Thiếu ý (Omission), Bịa thông tin (Factuality), và Văn bản dài (Long text).</p>
+        
+        <div class="error-summary-grid mt-20">
+          <div class="stat-card">
+            <div class="stat-num" id="err-omission">--</div>
+            <div class="stat-label">Thiếu ý cốt lõi (Omission)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="err-hallucination">--</div>
+            <div class="stat-label">Bịa thông tin / Ảo giác (Hallucination)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="err-long">--</div>
+            <div class="stat-label">Thất bại do văn bản dài (Long-text)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Đề tài NLP-20 • Nhóm 10 - Khoa Công nghệ Thông tin - Trường Đại học Kinh tế - Kỹ thuật Công nghiệp (UNETI)</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

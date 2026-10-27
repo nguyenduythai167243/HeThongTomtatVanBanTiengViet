@@ -1,0 +1,15 @@
+{
+  "lead_k": {
+    "k_values": [1, 2, 3],
+    "default_k": 3,
+    "description": "Lead-k baseline lấy k câu đầu tiên của văn bản tiếng Việt"
+  },
+  "tfidf_extractive": {
+    "num_sentences": 3,
+    "min_df": 1,
+    "max_df": 0.95,
+    "ngram_range": [1, 2],
+    "position_weight": 0.25,
+    "description": "TF-IDF Extractive baseline xếp hạng câu theo trọng số TF-IDF kết hợp vị trí xuất hiện (position prior)"
+  }
+}

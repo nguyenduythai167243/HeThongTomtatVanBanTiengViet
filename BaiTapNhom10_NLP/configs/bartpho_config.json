@@ -1,0 +1,27 @@
+{
+  "model_name_or_path": "vinai/bartpho-syllable",
+  "tokenizer_name": "vinai/bartpho-syllable",
+  "max_input_length": 1024,
+  "max_target_length": 150,
+  "min_target_length": 30,
+  "num_beams": 4,
+  "length_penalty": 1.0,
+  "no_repeat_ngram_size": 3,
+  "early_stopping": true,
+  "temperature": 1.0,
+  "do_sample": false,
+  "device": "auto",
+  "batch_size": 2,
+  "training": {
+    "learning_rate": 5e-5,
+    "warmup_ratio": 0.1,
+    "weight_decay": 0.01,
+    "num_train_epochs": 5,
+    "gradient_accumulation_steps": 4,
+    "fp16": true,
+    "evaluation_strategy": "epoch",
+    "save_strategy": "epoch",
+    "load_best_model_at_end": true,
+    "metric_for_best_model": "rouge2_f1"
+  }
+}

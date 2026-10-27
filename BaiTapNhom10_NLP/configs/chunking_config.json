@@ -1,0 +1,15 @@
+{
+  "chunk_size_tokens": 750,
+  "chunk_overlap_tokens": 120,
+  "reduction_strategy": "map_reduce",
+  "map_max_target_length": 90,
+  "map_min_target_length": 25,
+  "reduce_max_target_length": 160,
+  "reduce_min_target_length": 40,
+  "extractive_hybrid": {
+    "enabled": true,
+    "top_k_sentences": 8,
+    "scoring_method": "tfidf_lead_hybrid"
+  },
+  "description": "Cấu hình phân đoạn văn bản dài (Chunking) giải quyết giới hạn 1024 tokens của Transformer Seq2Seq"
+}

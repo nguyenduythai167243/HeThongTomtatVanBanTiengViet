@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VietnameseSummarizationSampleSchema",
+  "description": "Schema định dạng mẫu dữ liệu cho đề tài NLP-20: Tóm tắt văn bản tiếng Việt sử dụng Transformer",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "document",
+    "summary",
+    "domain",
+    "source",
+    "word_count_doc",
+    "word_count_summary"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Mã định danh duy nhất của mẫu dữ liệu"
+    },
+    "title": {
+      "type": "string",
+      "description": "Tiêu đề của bài báo hoặc tài liệu gốc"
+    },
+    "document": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Nội dung văn bản tiếng Việt gốc cần tóm tắt"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 5,
+      "description": "Bản tóm tắt chuẩn tham chiếu (ground truth / gold summary)"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "Chính trị - Xã hội",
+        "Kinh tế - Tài chính",
+        "Khoa học - Công nghệ",
+        "Giáo dục",
+        "Y tế - Sức khỏe",
+        "Pháp luật",
+        "Văn hóa - Đời sống",
+        "Edge-Cases"
+      ],
+      "description": "Lĩnh vực bài báo dùng để phân chia train/val/test chống rò rỉ chủ đề (domain leakage)"
+    },
+    "source": {
+      "type": "string",
+      "description": "Nguồn thu thập dữ liệu (VnExpress, Tuổi Trẻ, Dân Trí, VietnamNet...)"
+    },
+    "license": {
+      "type": "string",
+      "default": "Research and Educational Use Only (Khoa CNTT - UNETI)",
+      "description": "Điều khoản sử dụng dữ liệu học thuật"
+    },
+    "word_count_doc": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Số lượng từ của văn bản gốc"
+    },
+    "word_count_summary": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Số lượng từ của tóm tắt vàng"
+    },
+    "sentence_count_doc": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Số câu trong văn bản gốc"
+    },
+    "compression_ratio": {
+      "type": "number",
+      "description": "Tỷ lệ nén độ dài: word_count_summary / word_count_doc"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Thông tin bổ sung (tác giả, ngày đăng, nhãn trường hợp biên)",
+      "properties": {
+        "is_edge_case": {
+          "type": "boolean"
+        },
+        "edge_case_type": {
+          "type": "string",
+          "enum": ["normal", "very_short", "very_long", "heavy_numbers", "complex_names", "noisy_text"]
+        }
+      }
+    }
+  }
+}

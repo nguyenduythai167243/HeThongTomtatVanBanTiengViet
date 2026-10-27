@@ -1,0 +1,44 @@
+{
+  "dataset_filepath": "d:\\NLP_Tina4\\BaiTapNhom10_NLP\\data\\sample_benchmark.jsonl",
+  "total_samples": 10,
+  "document_stats": {
+    "mean_words": 189.4,
+    "median_words": 180.5,
+    "min_words": 39,
+    "max_words": 549,
+    "std_words": 130.69,
+    "mean_sentences": 5.0
+  },
+  "summary_stats": {
+    "mean_words": 31.1,
+    "median_words": 31.0,
+    "min_words": 17,
+    "max_words": 48,
+    "std_words": 7.24
+  },
+  "compression_ratio_stats": {
+    "mean_ratio": 0.2197,
+    "median_ratio": 0.1757,
+    "min_ratio": 0.0874,
+    "max_ratio": 0.4359
+  },
+  "vocabulary_stats": {
+    "total_tokens": 1894,
+    "unique_vocab_size": 795,
+    "type_token_ratio_ttr": 0.4197
+  },
+  "domain_distribution": {
+    "Kinh tế - Tài chính": 2,
+    "Khoa học - Công nghệ": 3,
+    "Y tế - Sức khỏe": 1,
+    "Giáo dục": 1,
+    "Chính trị - Xã hội": 1,
+    "Edge-Cases": 2
+  },
+  "edge_case_distribution": {
+    "normal": 7,
+    "very_long": 1,
+    "heavy_numbers": 1,
+    "complex_names": 1
+  }
+}

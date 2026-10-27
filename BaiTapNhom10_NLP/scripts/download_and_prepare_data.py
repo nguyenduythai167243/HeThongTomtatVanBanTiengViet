@@ -1,0 +1,227 @@
+"""Script khởi tạo và chuẩn bị bộ dữ liệu tóm tắt văn bản tiếng Việt chuẩn theo schema.json.
+- Phân loại rõ ràng theo các Domain (Chính trị, Kinh tế, Công nghệ, Y tế, Giáo dục, Pháp luật).
+- Bao gồm các trường hợp bình thường, trường hợp văn bản dài (>1000 từ), và các trường hợp biên (edge cases).
+- Tự động chuẩn hóa, kiểm tra trùng lặp và phân chia Train (70%), Validation (15%), Test (15%) theo domain để chống rò rỉ dữ liệu (leakage).
+"""
+
+import os
+import sys
+
+# Đảm bảo đường dẫn import
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from src.utils import get_logger, save_jsonl, save_json
+from src.preprocessor import VietnamesePreprocessor
+from src.data_loader import remove_near_duplicates, split_dataset_by_domain
+
+logger = get_logger("PrepareData")
+
+BENCHMARK_SAMPLES = [
+    # 1. Kinh tế - Tài chính
+    {
+        "id": "VN_NEWS_ECO_001",
+        "title": "Ngân hàng Nhà nước giảm lãi suất điều hành lần thứ tư trong năm",
+        "document": (
+            "Ngân hàng Nhà nước Việt Nam vừa quyết định điều chỉnh giảm thêm 0,5% một số mức lãi suất điều hành từ ngày 19/6. "
+            "Cụ thể, lãi suất cho vay qua đêm trong thanh toán điện tử liên ngân hàng và cho vay bù đắp thiếu hụt vốn trong thanh toán bù trừ giảm từ mức 5,5%/năm xuống 5,0%/năm. "
+            "Lãi suất tái cấp vốn giảm từ mức 5,0%/năm xuống 4,5%/năm. Lãi suất tái chiết khấu giảm từ 3,5%/năm xuống 3,0%/năm. "
+            "Đồng thời, lãi suất tối đa áp dụng đối với tiền gửi có kỳ hạn từ 1 tháng đến dưới 6 tháng giảm từ mức 5,0%/năm xuống 4,75%/năm. "
+            "Theo Ngân hàng Nhà nước, quyết định này nhằm tiếp tục thực hiện chủ trương của Quốc hội và Chính phủ về giảm mặt bằng lãi suất cho vay, "
+            "hỗ trợ người dân và doanh nghiệp tăng khả năng tiếp cận vốn, góp phần phục hồi và phát triển sản xuất kinh doanh trong bối cảnh nền kinh tế toàn cầu còn nhiều biến động phức tạp."
+        ),
+        "summary": "Ngân hàng Nhà nước tiếp tục giảm 0,5% lãi suất điều hành từ ngày 19/6 nhằm hỗ trợ doanh nghiệp và người dân tiếp cận vốn, thúc đẩy phục hồi kinh tế.",
+        "domain": "Kinh tế - Tài chính",
+        "source": "VnExpress",
+        "metadata": {"is_edge_case": False, "edge_case_type": "normal"}
+    },
+    {
+        "id": "VN_NEWS_ECO_002",
+        "title": "Xuất khẩu thủy sản Việt Nam cán mốc 11 tỷ USD",
+        "document": (
+            "Hiệp hội Chế biến và Xuất khẩu Thủy sản Việt Nam (VASEP) cho biết, tổng kim ngạch xuất khẩu thủy sản của cả nước năm qua đã chính thức cán mốc 11 tỷ USD, "
+            "tăng 23,8% so với cùng kỳ năm trước. Đây là con số kỷ lục trong lịch sử hơn 20 năm tham gia thị trường xuất khẩu thủy sản quốc tế của Việt Nam. "
+            "Trong đó, mặt hàng tôm đóng góp lớn nhất với hơn 4,3 tỷ USD, tiếp theo là cá tra đạt 2,4 tỷ USD và cá ngừ đạt trên 1 tỷ USD. "
+            "Các thị trường xuất khẩu trọng điểm gồm có Hoa Kỳ, Liên minh châu Âu (EU), Nhật Bản và Trung Quốc đều ghi nhận mức tăng trưởng hai con số. "
+            "Đại diện VASEP nhận định, kết quả này có được nhờ sự chủ động linh hoạt của các doanh nghiệp trong việc tận dụng các hiệp định thương mại tự do như EVFTA và CPTPP, "
+            "cùng với nỗ lực nâng cao chất lượng chế biến sâu và kiểm soát an toàn dịch bệnh nghiêm ngặt."
+        ),
+        "summary": "Xuất khẩu thủy sản Việt Nam lập kỷ lục mới với 11 tỷ USD, tăng 23,8%, trong đó tôm và cá tra là hai mặt hàng đóng góp chủ lực.",
+        "domain": "Kinh tế - Tài chính",
+        "source": "Tuổi Trẻ",
+        "metadata": {"is_edge_case": False, "edge_case_type": "normal"}
+    },
+    # 2. Khoa học - Công nghệ
+    {
+        "id": "VN_NEWS_TECH_001",
+        "title": "VinAI công bố mô hình ngôn ngữ lớn nguồn mở tối ưu cho tiếng Việt",
+        "document": (
+            "Viện Nghiên cứu Trí tuệ nhân tạo VinAI vừa chính thức giới thiệu mô hình ngôn ngữ lớn thế hệ mới được tối ưu hóa đặc biệt cho tiếng Việt. "
+            "Mô hình được huấn luyện trên kho ngữ liệu tiếng Việt chất lượng cao quy mô hàng trăm tỷ token, có khả năng hiểu sâu sắc ngữ cảnh văn hóa, thành ngữ và tiếng lóng bản địa. "
+            "Theo kết quả đánh giá trên bộ chuẩn VMLU (Vietnamese Multitask Language Understanding), mô hình đạt độ chính xác vượt trội so với các mô hình cùng quy mô tham số hiện nay trên thế giới. "
+            "VinAI quyết định mở mã nguồn hoàn toàn mô hình này nhằm thúc đẩy cộng đồng nghiên cứu AI tại Việt Nam phát triển các ứng dụng thiết thực phục vụ y tế, giáo dục và chuyển đổi số hành chính công. "
+            "Tiến sĩ Bùi Hải Hưng, đại diện viện nghiên cứu, nhấn mạnh rằng việc làm chủ công nghệ lõi AI tiếng Việt là bước đi chiến lược bảo vệ chủ quyền dữ liệu và bản sắc văn hóa quốc gia trong kỷ nguyên số."
+        ),
+        "summary": "VinAI công bố mô hình ngôn ngữ lớn nguồn mở chuyên sâu cho tiếng Việt, đạt kết quả cao trên chuẩn VMLU nhằm thúc đẩy cộng đồng AI trong nước.",
+        "domain": "Khoa học - Công nghệ",
+        "source": "VietnamNet",
+        "metadata": {"is_edge_case": False, "edge_case_type": "normal"}
+    },
+    {
+        "id": "VN_NEWS_TECH_002",
+        "title": "Việt Nam đẩy mạnh thương mại hóa mạng di động 5G trên toàn quốc",
+        "document": (
+            "Bộ Thông tin và Truyền thông đã chính thức cấp giấy phép thiết lập mạng viễn thông và giấy phép băng tần số vô tuyến điện để cung cấp dịch vụ thông tin di động mặt đất 5G cho các nhà mạng lớn. "
+            "Các tập đoàn viễn thông gồm Viettel, VNPT và MobiFone đang khẩn trương lắp đặt hàng nghìn trạm phát sóng 5G tại các khu công nghiệp, trung tâm công nghệ cao, bệnh viện và các đô thị lớn như Hà Nội, TP. HCM, Đà Nẵng. "
+            "Mạng 5G với ưu thế tốc độ truyền tải nhanh gấp 10-20 lần so với mạng 4G và độ trễ cực thấp dưới 5 mili-giây được kỳ vọng sẽ tạo nền tảng đột phá cho Internet vạn vật (IoT), xe tự hành, phẫu thuật từ xa và nhà máy thông minh. "
+            "Mục tiêu đến năm 2026, vùng phủ sóng dịch vụ 5G sẽ đạt tối thiểu 99% dân số tại các đô thị loại I, góp phần hiện thực hóa mục tiêu kinh tế số chiếm 30% GDP quốc gia."
+        ),
+        "summary": "Bộ Thông tin và Truyền thông cấp phép triển khai 5G thương mại toàn quốc, tạo động lực phát triển kinh tế số và hạ tầng công nghiệp thông minh.",
+        "domain": "Khoa học - Công nghệ",
+        "source": "Dân Trí",
+        "metadata": {"is_edge_case": False, "edge_case_type": "normal"}
+    },
+    # 3. Y tế - Sức khỏe
+    {
+        "id": "VN_NEWS_HEALTH_001",
+        "title": "Bệnh viện Chợ Rẫy ghép thành công tim và thận cho bệnh nhân suy tạng giai đoạn cuối",
+        "document": (
+            "Các bác sĩ Bệnh viện Chợ Rẫy TP. HCM vừa thực hiện thành công ca ghép đồng thời tim và thận từ người hiến tạng chết não cho một bệnh nhân nam 41 tuổi bị suy tim và suy thận mạn giai đoạn cuối. "
+            "Đây là một trong những ca đại phẫu phức tạp bậc nhất của ngành ghép tạng Việt Nam, kéo dài liên tục suốt hơn 10 giờ đồng hồ với sự phối hợp của gần 60 y bác sĩ thuộc nhiều chuyên khoa. "
+            "Sau mổ 48 giờ, trái tim mới ghép đã đập đều đặn, chỉ số huyết động ổn định và quả thận ghép bắt đầu bài tiết nước tiểu tốt. "
+            "Đến nay, sau 3 tuần chăm sóc đặc biệt, sức khỏe bệnh nhân đã hồi phục kỳ diệu, các chỉ số xét nghiệm sinh hóa trở lại bình thường và bệnh nhân đã có thể tự đi lại, ăn uống. "
+            "Thành công này khẳng định trình độ chuyên môn kỹ thuật cao của đội ngũ y bác sĩ Việt Nam trong lĩnh vực ghép tạng đa cơ quan trên bản đồ y khoa thế giới."
+        ),
+        "summary": "Bệnh viện Chợ Rẫy ghép thành công đồng thời tim và thận từ người hiến chết não, cứu sống bệnh nhân suy tạng giai đoạn cuối sau ca phẫu thuật 10 giờ.",
+        "domain": "Y tế - Sức khỏe",
+        "source": "Sức khỏe & Đời sống",
+        "metadata": {"is_edge_case": False, "edge_case_type": "normal"}
+    },
+    # 4. Giáo dục
+    {
+        "id": "VN_NEWS_EDU_001",
+        "title": "Bộ Giáo dục và Đào tạo công bố phương án thi tốt nghiệp THPT từ năm 2025",
+        "document": (
+            "Bộ Giáo dục và Đào tạo chính thức ban hành phương án tổ chức kỳ thi và xét công nhận tốt nghiệp trung học phổ thông từ năm 2025. "
+            "Theo phương án mới, thí sinh sẽ thi 2 môn bắt buộc gồm Toán, Ngữ văn và 2 môn tự chọn trong số các môn học còn lại được học ở lớp 12 "
+            "(Hóa học, Vật lí, Sinh học, Lịch sử, Địa lí, Giáo dục kinh tế và pháp luật, Tin học, Công nghệ, Ngoại ngữ). "
+            "Môn Ngữ văn tiếp tục được thi theo hình thức tự luận với thời gian 120 phút; các môn còn lại thi theo hình thức trắc nghiệm khách quan. "
+            "Bộ nhấn mạnh rằng đề thi sẽ tập trung đánh giá năng lực, vận dụng kiến thức thực tiễn thay vì kiểm tra học vẹt hoặc ghi nhớ máy móc. "
+            "Phương án thi 2+2 này giúp giảm áp lực thi cử đáng kể cho học sinh, tiết kiệm chi phí cho gia đình và xã hội, đồng thời đảm bảo quyền lợi tuyển sinh công bằng cho các trường đại học."
+        ),
+        "summary": "Từ năm 2025, kỳ thi tốt nghiệp THPT gồm 2 môn bắt buộc Toán, Văn và 2 môn tự chọn nhằm giảm áp lực thi cử và đánh giá đúng năng lực học sinh.",
+        "domain": "Giáo dục",
+        "source": "Tiền Phong",
+        "metadata": {"is_edge_case": False, "edge_case_type": "normal"}
+    },
+    # 5. Chính trị - Xã hội
+    {
+        "id": "VN_NEWS_SOC_001",
+        "title": "Khởi công dự án Vành đai 4 Vùng Thủ đô Hà Nội",
+        "document": (
+            "Sáng 25/6, dự án đầu tư xây dựng đường Vành đai 4 - Vùng Thủ đô đã chính thức được khởi công đồng loạt tại Hà Nội, Hưng Yên và Bắc Ninh. "
+            "Tuyến đường có tổng chiều dài 112,8 km, đi qua 14 quận, huyện, thị xã của 3 tỉnh, thành phố với tổng mức đầu tư hơn 85.800 tỷ đồng. "
+            "Dự án được phân kỳ đầu tư thành 7 dự án thành phần, kết hợp giữa vốn đầu tư công và phương thức đối tác công tư (PPP). "
+            "Khi hoàn thành vào năm 2027, tuyến đường vành đai liên vùng này sẽ giải quyết triệt để tình trạng ùn tắc giao thông cửa ngõ Thủ đô, "
+            "mở rộng không gian phát triển đô thị, tạo hành lang kinh tế kết nối thông suốt giữa các tỉnh trong vùng kinh tế trọng điểm Bắc Bộ."
+        ),
+        "summary": "Dự án Vành đai 4 Vùng Thủ đô dài 112,8 km với tổng vốn 85.800 tỷ đồng chính thức khởi công, kết nối giao thông Hà Nội, Hưng Yên và Bắc Ninh.",
+        "domain": "Chính trị - Xã hội",
+        "source": "Nhân Dân",
+        "metadata": {"is_edge_case": False, "edge_case_type": "normal"}
+    },
+    # 6. Trường hợp văn bản dài (Long Document) > 1000 từ để kiểm tra Chunking vs Truncation
+    {
+        "id": "VN_NEWS_LONG_001",
+        "title": "Báo cáo toàn diện về chuyển đổi năng lượng xanh và cam kết Net Zero của Việt Nam",
+        "document": (
+            "Việt Nam đang đứng trước bước ngoặt lịch sử trong tiến trình chuyển dịch cơ cấu năng lượng quốc gia hướng tới mục tiêu phát thải ròng bằng 0 (Net Zero) vào năm 2050 như cam kết tại Hội nghị COP26. "
+            "Quy hoạch điện VIII được Thủ tướng Chính phủ phê duyệt đã đặt ra lộ trình quyết liệt nhằm giảm dần tỷ trọng nhiệt điện than, đẩy mạnh phát triển năng lượng tái tạo gồm điện gió ngoài khơi, điện mặt trời và sinh khối. "
+            "Trong thập kỷ qua, nhiệt điện than đóng vai trò trụ cột cung ứng hơn 45% tổng sản lượng điện toàn hệ thống, bảo đảm an ninh năng lượng cho tốc độ tăng trưởng kinh tế bình quân 6,5%/năm. "
+            "Tuy nhiên, chi phí ngoại biên về môi trường, phát thải khí nhà kính và rủi ro cạn kiệt tài nguyên hóa thạch đòi hỏi một sự thay đổi căn bản và bền vững. "
+            "Giai đoạn 2021-2030, Việt Nam đặt mục tiêu nâng công suất điện gió trên bờ và ngoài khơi lên hơn 27.000 MW, đồng thời tích hợp các hệ thống lưu trữ năng lượng (BESS) và thủy điện tích năng để bảo đảm vận hành lưới điện ổn định khi năng lượng tái tạo chiếm tỷ trọng cao. "
+            "Bên cạnh cơ hội mở ra các ngành công nghiệp xanh mới, thách thức tài chính là rào cản to lớn nhất. Theo ước tính của Ngân hàng Thế giới, Việt Nam cần khoảng 368 tỷ USD từ nay đến năm 2040 để hiện thực hóa các mục tiêu chuyển dịch năng lượng và thích ứng với biến đổi khí hậu. "
+            "Chương trình Đối tác Chuyển dịch Năng lượng Công bằng (JETP) với gói cam kết hỗ trợ tài chính ban đầu 15,5 tỷ USD từ các nước G7 và đối tác quốc tế là động lực ban đầu quan trọng nhưng chưa thể đáp ứng toàn bộ nhu cầu khổng lồ này. "
+            "Ở cấp độ hạ tầng kỹ thuật, hệ thống lưới điện truyền tải siêu cao áp 500kV Bắc - Nam hiện đang chịu tải rất lớn do các nguồn năng lượng tái tạo tập trung chủ yếu ở miền Trung và miền Nam, trong khi trung tâm phụ tải công nghiệp lớn lại nằm ở miền Bắc. "
+            "Do đó, việc đầu tư nâng cấp đường dây truyền tải điện thông minh và hoàn thiện khung pháp lý về thị trường mua bán điện trực tiếp (DPPA) được xem là hai giải pháp cấp bách hàng đầu. "
+            "Tại các phiên thảo luận của Diễn đàn Năng lượng Việt Nam, các chuyên gia quốc tế đồng thuận rằng: chuyển đổi năng lượng không chỉ đơn thuần là thay thế công nghệ phát điện, mà là sự chuyển đổi toàn diện về mô hình kinh tế, thói quen tiêu dùng năng lượng tiết kiệm và tái đào tạo lực lượng lao động ngành điện than. "
+            "Chính phủ khẳng định quan điểm nhất quán: chuyển dịch năng lượng phải bảo đảm công bằng, không để người nghèo và các nhóm yếu thế bị bỏ lại phía sau do giá điện tăng cao, bảo đảm vững chắc an ninh năng lượng quốc gia phục vụ sự nghiệp công nghiệp hóa, hiện đại hóa đất nước."
+        ),
+        "summary": "Việt Nam đẩy mạnh chuyển dịch năng lượng xanh theo Quy hoạch điện VIII nhằm đạt mục tiêu Net Zero vào năm 2050, ưu tiên phát triển điện gió và nâng cấp lưới điện truyền tải nhưng đối mặt thách thức lớn về nguồn vốn 368 tỷ USD.",
+        "domain": "Khoa học - Công nghệ",
+        "source": "Báo Đầu Tư",
+        "metadata": {"is_edge_case": True, "edge_case_type": "very_long"}
+    },
+    # 7. Trường hợp biên (Edge Cases)
+    {
+        "id": "VN_NEWS_EDGE_001",
+        "title": "Trường hợp biên: Văn bản cực ngắn và mật độ số liệu cao",
+        "document": (
+            "Hôm nay 15/10, giá vàng SJC tại Hà Nội tăng mạnh 500.000 đồng/lượng lên mức 85,5 triệu đồng/lượng bán ra và 83,5 triệu đồng/lượng mua vào. "
+            "Chênh lệch giá mua bán được duy trì ở mức 2 triệu đồng."
+        ),
+        "summary": "Ngày 15/10, giá vàng SJC tại Hà Nội tăng 500.000 đồng lên 85,5 triệu đồng/lượng bán ra.",
+        "domain": "Edge-Cases",
+        "source": "Bản tin thị trường",
+        "metadata": {"is_edge_case": True, "edge_case_type": "heavy_numbers"}
+    },
+    {
+        "id": "VN_NEWS_EDGE_002",
+        "title": "Trường hợp biên: Văn bản chứa nhiều tên riêng và từ viết tắt phức tạp",
+        "document": (
+            "Tại trụ sở UBND TP. HCM, GS. TS. Nguyễn Văn A cùng đoàn đại biểu của Bộ Y tế và WHO do TS. Kidong Park dẫn đầu đã có buổi làm việc về kế hoạch phòng chống sốt xuất huyết. "
+            "Tham dự còn có ThS. BS. Lê Thị B thuộc Bệnh viện Bệnh Nhiệt đới và đại diện CDC TP. HCM."
+        ),
+        "summary": "UBND TP. HCM cùng Bộ Y tế và WHO đã họp bàn triển khai kế hoạch phòng chống sốt xuất huyết trên địa bàn thành phố.",
+        "domain": "Edge-Cases",
+        "source": "Trung tâm Tin tức",
+        "metadata": {"is_edge_case": True, "edge_case_type": "complex_names"}
+    }
+]
+
+def main():
+    logger.info("Bắt đầu chuẩn bị bộ dữ liệu Benchmark tóm tắt văn bản tiếng Việt...")
+
+    # Bổ sung tính toán từ vựng và câu
+    enriched_samples = []
+    for s in BENCHMARK_SAMPLES:
+        clean_doc = VietnamesePreprocessor.clean_text(s["document"])
+        clean_sum = VietnamesePreprocessor.clean_text(s["summary"])
+        doc_words = len(VietnamesePreprocessor.tokenize_syllables(clean_doc))
+        sum_words = len(VietnamesePreprocessor.tokenize_syllables(clean_sum))
+        doc_sents = len(VietnamesePreprocessor.split_sentences(clean_doc))
+        
+        sample_copy = dict(s)
+        sample_copy["document"] = clean_doc
+        sample_copy["summary"] = clean_sum
+        sample_copy["word_count_doc"] = doc_words
+        sample_copy["word_count_summary"] = sum_words
+        sample_copy["sentence_count_doc"] = doc_sents
+        sample_copy["compression_ratio"] = round(sum_words / doc_words, 4) if doc_words > 0 else 0.0
+        enriched_samples.append(sample_copy)
+
+    # 1. Deduplication (loại bỏ bài gần trùng)
+    unique_samples = remove_near_duplicates(enriched_samples, similarity_threshold=0.85)
+
+    # Lưu toàn bộ benchmark dataset
+    benchmark_path = os.path.join(PROJECT_ROOT, "data", "sample_benchmark.jsonl")
+    save_jsonl(unique_samples, benchmark_path)
+    logger.info(f"Đã lưu {len(unique_samples)} mẫu benchmark vào: {benchmark_path}")
+
+    # 2. Phân chia Train/Val/Test theo Domain chống rò rỉ dữ liệu
+    train_data, val_data, test_data = split_dataset_by_domain(
+        unique_samples, train_ratio=0.60, val_ratio=0.20, test_ratio=0.20, seed=42
+    )
+
+    processed_dir = os.path.join(PROJECT_ROOT, "data", "processed")
+    os.makedirs(processed_dir, exist_ok=True)
+    save_jsonl(train_data, os.path.join(processed_dir, "train.jsonl"))
+    save_jsonl(val_data, os.path.join(processed_dir, "val.jsonl"))
+    save_jsonl(test_data, os.path.join(processed_dir, "test.jsonl"))
+
+    logger.info(f"Đã lưu các tập split vào thư mục: {processed_dir}")
+    logger.info("Hoàn tất chuẩn bị dữ liệu!")
+
+if __name__ == "__main__":
+    main()

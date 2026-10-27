@@ -1,0 +1,33 @@
+{
+  "experiments": [
+    {
+      "name": "Budget-Short",
+      "min_target_length": 20,
+      "max_target_length": 60,
+      "length_penalty": 0.6,
+      "num_beams": 4,
+      "description": "Ngân sách tóm tắt cực ngắn (1-2 câu, cô đọng cao)"
+    },
+    {
+      "name": "Budget-Medium-Standard",
+      "min_target_length": 40,
+      "max_target_length": 120,
+      "length_penalty": 1.0,
+      "num_beams": 4,
+      "description": "Ngân sách tóm tắt chuẩn (2-3 câu, cân bằng bao phủ và cô đọng)"
+    },
+    {
+      "name": "Budget-Long-Detailed",
+      "min_target_length": 80,
+      "max_target_length": 200,
+      "length_penalty": 1.8,
+      "num_beams": 4,
+      "description": "Ngân sách tóm tắt dài chi tiết (3-5 câu, ưu tiên bảo toàn thông tin)"
+    }
+  ],
+  "truncation_vs_chunking": {
+    "test_threshold_words": 1000,
+    "truncation_limits": [512, 1024],
+    "chunking_sizes": [600, 800]
+  }
+}
