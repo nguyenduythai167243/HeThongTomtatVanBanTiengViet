@@ -20,7 +20,7 @@ Hệ thống được thiết kế theo đúng quy chuẩn nghiêm ngặt của 
 
 ---
 
-## 📁 CẤU TRÚC THƯ MỤC DỰ ÁN
+##  CẤU TRÚC THƯ MỤC DỰ ÁN
 
 ```text
 BaiTapNhom10_NLP/
@@ -151,7 +151,7 @@ Giao diện hỗ trợ:
 
 ---
 
-## 📚 TÀI LIỆU KÈM THEO
+##  TÀI LIỆU KÈM THEO
 1. [Báo cáo đồ án 7 chương chi tiết](docs/BAO_CAO_NLP_20_NHOM_10.md)
 2. [Lời giải chi tiết 5 câu hỏi định hướng](docs/TRA_LOI_5_CAU_HOI_DINH_HUONG.md)
 3. [Đặc tả Schema dữ liệu](data/schema.json)
