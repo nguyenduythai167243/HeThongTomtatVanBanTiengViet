@@ -7,7 +7,7 @@
 
 ---
 
-## 📌 GIỚI THIỆU TỔNG QUAN
+##  GIỚI THIỆU TỔNG QUAN
 Dự án triển khai hoàn chỉnh một hệ thống tóm tắt văn bản tiếng Việt tự động dựa trên kiến trúc **Transformer Sequence-to-Sequence (BARTpho)** kết hợp với các mô hình đối chuẩn truyền thống (**Lead-k**, **TF-IDF Extractive**) và kỹ thuật phân đoạn **Map-Reduce Chunking** cho văn bản dài.
 
 Hệ thống được thiết kế theo đúng quy chuẩn nghiêm ngặt của đề tài NLP-20:
@@ -78,7 +78,7 @@ BaiTapNhom10_NLP/
 
 ---
 
-## 🚀 HƯỚNG DẪN CÀI ĐẶT & CHẠY TÁI LẬP (REPRODUCIBILITY)
+##  HƯỚNG DẪN CÀI ĐẶT & CHẠY TÁI LẬP (REPRODUCIBILITY)
 
 ### Bước 1: Cài đặt môi trường
 Yêu cầu Python >= 3.10 (hoặc Python 3.14). Cài đặt các thư viện phụ thuộc:
@@ -133,7 +133,7 @@ Giao diện hỗ trợ:
 
 ---
 
-## 📊 KẾT QUẢ THỰC NGHIỆM CHÍNH
+##  KẾT QUẢ THỰC NGHIỆM CHÍNH
 
 ### 1. Bảng đối chuẩn hiệu năng trên tập Test
 
