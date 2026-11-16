@@ -1,0 +1,31 @@
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Checkpoints & Large Model Weights
+checkpoints/
+*.pt
+*.bin
+*.safetensors
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Temporary Files
+.DS_Store
+Thumbs.db
